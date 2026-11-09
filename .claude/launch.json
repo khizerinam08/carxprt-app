@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "carxprt-app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:/carxprt-about/carxprt-app", "run", "dev", "--", "-p", "5530"],
+      "port": 5530,
+      "autoPort": false,
+      "url": "http://localhost:5530"
+    }
+  ]
+}
