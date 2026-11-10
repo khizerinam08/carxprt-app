@@ -30,6 +30,28 @@ export default function DiscoveryHub() {
     ...(f.milesMax ? [{ label: `Under ${(+f.milesMax).toLocaleString("en-US")} mi`, clear: () => a.patchFilters({ milesMax: "" }) }] : []),
   ];
 
+  // phones: the top bar slides away while you scroll down and comes back on scroll up, bringing the filter row
+  // (applied filters, Filters and Sort) with it. `mark` sits just above the row to tell when the row is pinned.
+  const row = useRef<HTMLDivElement>(null);
+  const mark = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    let last = scrollY;
+    const on = () => {
+      const y = scrollY;
+      if (row.current && mark.current) {
+        row.current.classList.toggle("stuck", mark.current.getBoundingClientRect().top < 56);
+        root.style.setProperty("--fr-h", `${row.current.offsetHeight}px`);
+      }
+      if (y < 56) { root.dataset.bars = "shown"; last = y; }
+      else if (Math.abs(y - last) > 6) { root.dataset.bars = y > last ? "hidden" : "shown"; last = y; }
+    };
+    on();
+    addEventListener("scroll", on, { passive: true });
+    addEventListener("resize", on);
+    return () => { removeEventListener("scroll", on); removeEventListener("resize", on); delete root.dataset.bars; root.style.removeProperty("--fr-h"); };
+  }, []);
+
   useEffect(() => {
     const el = scroller.current; if (!el) return;
     const check = () => setOverflow(el.scrollWidth > el.clientWidth + 2);
@@ -44,7 +66,8 @@ export default function DiscoveryHub() {
         <h1>Discovery Hub</h1>
         <SearchPill value={a.query} onChange={a.setQuery} withSuggestions />
       </header>
-      <div className="filter-row">
+      <div ref={mark} aria-hidden="true" />
+      <div className="filter-row dh-row" ref={row}>
         <div className="fr-left">
           <span className="count">{a.results.length} {a.results.length === 1 ? "vehicle" : "vehicles"} found</span>
           <div className="chip-scroll" ref={scroller}>
@@ -55,8 +78,8 @@ export default function DiscoveryHub() {
           {chips.length > 0 && <button className="btn btn-out btn-pill btn-sm" style={{ height: 30, flex: "none" }} onClick={a.clearFilters}>Clear All</button>}
         </div>
         <div className="fr-right">
-          <button className={`tool-btn ${a.panel === "filters" ? "on" : ""}`} onClick={() => a.setPanel(a.panel === "filters" ? null : "filters")}><Filter size={15} /> Filters</button>
-          <button className="tool-btn" aria-expanded={sortOpen} onClick={() => setSortOpen((o) => !o)}><ArrowUpNarrowWide size={15} /> Sort</button>
+          <button className={`tool-btn ${a.panel === "filters" ? "on" : ""}`} aria-label="Filters" onClick={() => a.setPanel(a.panel === "filters" ? null : "filters")}><Filter size={15} /><span className="tb-label">Filters</span></button>
+          <button className="tool-btn" aria-expanded={sortOpen} aria-label="Sort" onClick={() => setSortOpen((o) => !o)}><ArrowUpNarrowWide size={15} /><span className="tb-label">Sort</span></button>
           {sortOpen && (
             <div className="pop" style={{ top: 46, right: 0, width: 220 }}>
               {SORTS.map((s) => <button key={s} className={`pop-row ${f.sort === s ? "on" : ""}`} onClick={() => { a.patchFilters({ sort: s }); setSortOpen(false); }}>{s}</button>)}
