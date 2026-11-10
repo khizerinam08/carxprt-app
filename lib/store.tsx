@@ -3,7 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { applyFilters, byId, EMPTY_FILTERS, SEED_DEALS, VEHICLES, type Deal, type Filters } from "./data";
 
 export type PanelKind = "chat" | "advisor" | "filters" | null;
-export type ChatMsg = { id: number; role: "user" | "ai"; text: string; tool?: string; variants?: string[]; variant?: number; regenerated?: boolean; vote?: "up" | "down" };
+export type ChatMsg = { id: number; role: "user" | "ai"; text: string; at: number; tool?: string; variants?: string[]; variant?: number; regenerated?: boolean; vote?: "up" | "down" };
+
+export const PANEL_MAX = 520;
 
 let msgId = 1;
 
@@ -71,7 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const t = localStorage.getItem("cx-theme");
       if (t === "dark" || t === "light") setThemeState(t);
       const w = Number(localStorage.getItem("cx-panel"));
-      if (w) setPanelWidth(w);
+      if (w) setPanelWidth(Math.min(w, PANEL_MAX));
     } catch { /* storage can be blocked; defaults are fine */ }
     setReady(true);
   }, []);
@@ -116,17 +118,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPending(true);
     setTimeout(() => {
       const a = answer(text);
-      setMessages((m) => [...m, { id: msgId++, role: "ai", text: a.reply, tool: a.tool, variants: [a.reply, a.alt], variant: 0 }]);
+      setMessages((m) => [...m, { id: msgId++, role: "ai", text: a.reply, at: Date.now(), tool: a.tool, variants: [a.reply, a.alt], variant: 0 }]);
       setPending(false);
     }, 650);
   };
-  const send = (t: string) => { const text = t.trim(); if (!text) return; setQueries((q) => q + 1); setMessages((m) => [...m, { id: msgId++, role: "user", text }]); respond(text); };
+  const send = (t: string) => { const text = t.trim(); if (!text) return; setQueries((q) => q + 1); setMessages((m) => [...m, { id: msgId++, role: "user", text, at: Date.now() }]); respond(text); };
   const editMessage = (id: number, t: string) => {
     const text = t.trim(); if (!text) return;
-    setMessages((m) => { const i = m.findIndex((x) => x.id === id); return [...m.slice(0, i), { ...m[i], text }]; });
+    setMessages((m) => { const i = m.findIndex((x) => x.id === id); return [...m.slice(0, i), { ...m[i], text, at: Date.now() }]; });
     respond(text);
   };
-  const regenerate = (id: number) => setMessages((m) => m.map((x) => { if (x.id !== id || !x.variants) return x; const v = ((x.variant ?? 0) + 1) % x.variants.length; return { ...x, variant: v, regenerated: true, text: x.variants[v] }; }));
+  const regenerate = (id: number) => setMessages((m) => m.map((x) => { if (x.id !== id || !x.variants) return x; const v = ((x.variant ?? 0) + 1) % x.variants.length; return { ...x, variant: v, regenerated: true, at: Date.now(), text: x.variants[v] }; }));
   const setVariant = (id: number, d: number) => setMessages((m) => m.map((x) => { if (x.id !== id || !x.variants) return x; const v = Math.min(x.variants.length - 1, Math.max(0, (x.variant ?? 0) + d)); return { ...x, variant: v, text: x.variants[v] }; }));
   const vote = (id: number, v: "up" | "down") => setMessages((m) => m.map((x) => (x.id === id ? { ...x, vote: x.vote === v ? undefined : v } : x)));
 

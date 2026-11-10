@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpNarrowWide, Filter, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ArrowUpNarrowWide, CarFront, Filter, X } from "lucide-react";
 import { SearchPill, VehicleCard } from "@/components/Common";
-import { SORTS, money } from "@/lib/data";
+import { SORTS, byId, money } from "@/lib/data";
 import { useApp } from "@/lib/store";
 
 export default function DiscoveryHub() {
   const a = useApp();
+  const router = useRouter();
   const f = a.filters;
+  const picks = a.compare.length;
   const [sortOpen, setSortOpen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);
@@ -62,8 +65,19 @@ export default function DiscoveryHub() {
         </div>
       </div>
       {a.compareMode && (
-        <div className="banner">Select up to 3 cars to compare their features, specs and differences.
-          <button className="btn btn-out btn-sm btn-pill" onClick={() => { a.setCompareMode(false); a.clearCompare(); }}>Exit Compare Mode</button>
+        <div className="compare-bar">
+          <span className="cb-icon"><CarFront size={18} /></span>
+          <div className="cb-copy">
+            <strong>You’re in Compare Mode</strong>
+            <span aria-live="polite">{picks === 3 ? "3 of 3 selected. Remove one to swap it." : `Click up to 3 cars to add them. ${picks} of 3 selected.`}</span>
+          </div>
+          <div className="cb-slots" aria-hidden="true">
+            {[0, 1, 2].map((i) => { const v = a.compare[i] ? byId(a.compare[i]) : null; return <span key={i} className={v ? "on" : ""}>{v && <img src={v.img} alt="" />}</span>; })}
+          </div>
+          <div className="cb-actions">
+            <button className="btn btn-lime btn-sm btn-pill" disabled={picks < 2} onClick={() => router.push("/compare")}>Compare{picks >= 2 ? ` ${picks} cars` : ""}</button>
+            <button className="btn btn-out btn-sm btn-pill" onClick={() => { a.setCompareMode(false); a.clearCompare(); }}>Exit</button>
+          </div>
         </div>
       )}
       {a.results.length ? (

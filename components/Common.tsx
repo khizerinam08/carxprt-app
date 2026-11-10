@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AudioLines, Bookmark, Check, CircleUserRound, Fuel, Gauge, MapPin, Search, Tag } from "lucide-react";
+import { Bookmark, Check, CircleUserRound, Fuel, Gauge, MapPin, Mic, Search, Tag } from "lucide-react";
 import { money, suggestions, type Vehicle } from "@/lib/data";
 import { useApp } from "@/lib/store";
 
@@ -33,7 +33,7 @@ export function SearchPill({ value, onChange, withSuggestions, placeholder = "Se
     <div className="search" ref={wrap}>
       <ZipField />
       <input aria-label="Search" placeholder={placeholder} value={value} onFocus={() => setOpen(true)} onChange={(e) => { onChange(e.target.value); setOpen(true); }} onKeyDown={(e) => { if (e.key === "Enter") { setOpen(false); if (withSuggestions) a.runSearch(value); } if (e.key === "Escape") setOpen(false); }} />
-      <button className="speak" onClick={a.startListening} aria-label="Speak to CarXprt"><span>Speak to CarXprt</span><AudioLines size={15} /></button>
+      <button className="speak" onClick={a.startListening} aria-label="Speak to CarXprt"><span>Speak to CarXprt</span><Mic size={15} /></button>
       {items.length > 0 && (
         <div className="pop suggest" role="listbox">
           <div className="pop-label">Suggestions</div>
@@ -55,8 +55,13 @@ export function VehicleCard({ v, index }: { v: Vehicle; index: number }) {
   const a = useApp();
   const saved = a.saved.includes(v.id);
   const picked = a.compare.includes(v.id);
+  const full = a.compareMode && !picked && a.compare.length >= 3;
   return (
-    <article className="card link-card vcard">
+    // in compare mode a click anywhere on the card picks the car instead of opening it
+    <article className={`card link-card vcard ${a.compareMode && picked ? "picked" : ""} ${full ? "full" : ""}`} onClickCapture={(e) => {
+      if (!a.compareMode || (e.target as Element).closest(".bm, .pick")) return;
+      e.preventDefault(); e.stopPropagation(); a.toggleCompare(v.id);
+    }}>
       <div className="card-photo">
         <Link href={`/vehicle/${v.id}`} aria-label={v.title}><img src={v.img} alt={v.title} loading="lazy" /></Link>
         <span className="num">{String(index + 1).padStart(2, "0")}</span>

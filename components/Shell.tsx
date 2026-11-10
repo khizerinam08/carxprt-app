@@ -7,7 +7,7 @@ import { Logo, HatGlasses } from "./Brand";
 import { ChatPanel } from "./ChatPanel";
 import { FiltersPanel } from "./FiltersPanel";
 import { byId } from "@/lib/data";
-import { useApp, type PanelKind } from "@/lib/store";
+import { PANEL_MAX, useApp, type PanelKind } from "@/lib/store";
 
 const MAIN = [
   { href: "/search", label: "Discovery Hub", icon: Car },
@@ -73,10 +73,16 @@ function Nav({ open, close }: { open: boolean; close: () => void }) {
         </div>
       )}
       <div className="nav-end">
-        <div className="theme" role="group" aria-label="Appearance">
-          <button className={a.theme === "light" ? "on" : ""} onClick={() => a.setTheme("light")} aria-label="Light"><Sun size={13} /><span>Light</span></button>
-          <button className={a.theme === "dark" ? "on" : ""} onClick={() => a.setTheme("dark")} aria-label="Dark"><Moon size={13} /><span>Dark</span></button>
-        </div>
+        {a.navCollapsed ? (
+          <button className="icon-btn theme-toggle" aria-label={`Switch to ${a.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${a.theme === "light" ? "dark" : "light"} mode`} onClick={() => a.setTheme(a.theme === "light" ? "dark" : "light")}>
+            {a.theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+        ) : (
+          <div className="theme" role="group" aria-label="Appearance">
+            <button className={a.theme === "light" ? "on" : ""} onClick={() => a.setTheme("light")} aria-label="Light"><Sun size={13} /><span>Light</span></button>
+            <button className={a.theme === "dark" ? "on" : ""} onClick={() => a.setTheme("dark")} aria-label="Dark"><Moon size={13} /><span>Dark</span></button>
+          </div>
+        )}
         <Link href="/account" className="me" onClick={close}>
           <div className="avatar">T</div>
           <div>Test Account<small>Free</small></div>
@@ -96,8 +102,9 @@ function ResizablePanel() {
     if (!drag) return;
     const move = (e: PointerEvent) => {
       const left = ref.current?.getBoundingClientRect().left ?? 0;
-      const max = Math.min(760, window.innerWidth * 0.6);
-      setW(Math.round(Math.min(max, Math.max(320, e.clientX - left))));
+      const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--z")) || 1;
+      const max = Math.min(PANEL_MAX, (window.innerWidth * 0.6) / z);
+      setW(Math.round(Math.min(max, Math.max(320, (e.clientX - left) / z))));
     };
     const up = () => setDrag(false);
     document.body.style.userSelect = "none";
